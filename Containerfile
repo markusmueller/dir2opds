@@ -9,3 +9,10 @@ RUN go build -o /app/dir2opds
 # Stage 2: Final Image
 FROM docker.io/alpine
 COPY --from=builder /app/dir2opds /dir2opds
+
+VOLUME [ "/books" ]
+
+EXPOSE 8080
+ENTRYPOINT ["/dir2opds"]
+
+CMD ["-port", "8080", "-dir", "/books", "-hide-dot-files"]
