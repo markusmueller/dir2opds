@@ -28,6 +28,7 @@ func TestHandler(t *testing.T) {
 		"feed (dir of dirs )":                 {input: "/", want: feed, WantedContentType: "application/atom+xml;profile=opds-catalog;kind=navigation", wantedStatusCode: 200},
 		"acquisitionFeed(dir of files)":       {input: "/mybook", want: acquisitionFeed, WantedContentType: "application/atom+xml;profile=opds-catalog;kind=acquisition", wantedStatusCode: 200},
 		"servingAFile":                        {input: "/mybook/mybook.txt", want: "Fixture", WantedContentType: "text/plain; charset=utf-8", wantedStatusCode: 200},
+		"is not serving hidden file":          {input: "/.Trash/mybook.epub", want: "Fixture", WantedContentType: "text/plain", wantedStatusCode: 404},
 		"serving file with spaces":            {input: "/mybook/mybook%20copy.txt", want: "Fixture", WantedContentType: "text/plain; charset=utf-8", wantedStatusCode: 200},
 		"http trasversal vulnerability check": {input: "/../../../../mybook", want: feed, WantedContentType: "application/atom+xml;profile=opds-catalog;kind=navigation", wantedStatusCode: 404},
 		"search definition":                   {input: "/opensearch.xml", want: searchDefinition, WantedContentType: "application/xml", wantedStatusCode: 200},

@@ -131,7 +131,12 @@ func (s OPDS) Handler(w http.ResponseWriter, req *http.Request) error {
 
 		// it's a file just serve the file
 		if getPathType(fPath) == pathTypeFile {
-			http.ServeFile(w, req, fPath)
+			_, pathRelativeToContentRoot, _ := strings.Cut(fPath, s.TrustedRoot+"/")
+			if fileShouldBeIgnored(pathRelativeToContentRoot, s.HideCalibreFiles, s.HideDotFiles) {
+				w.WriteHeader(http.StatusNotFound)
+			} else {
+				http.ServeFile(w, req, fPath)
+			}
 			return nil
 		}
 	}
