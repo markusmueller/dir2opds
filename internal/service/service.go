@@ -8,6 +8,8 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"github.com/dubyte/dir2opds/search"
+	"io/fs"
 	"log"
 	"mime"
 	"net/http"
@@ -61,6 +63,11 @@ func isFile(e IsDirer) bool {
 
 const navigationType = "application/atom+xml;profile=opds-catalog;kind=navigation"
 
+const searchType = "application/opensearchdescription+xml"
+const searchDefinitionPath = "/" + searchDefinitionName
+const searchDefinitionName = "opensearch.xml"
+const searchPath = "/search"
+
 var TimeNow = timeNowFunc()
 
 // Handler serve the content of a book file or
@@ -74,30 +81,59 @@ func (s OPDS) Handler(w http.ResponseWriter, req *http.Request) error {
 		return err
 	}
 
-	fPath := filepath.Join(s.TrustedRoot, urlPath)
+	if urlPath == searchDefinitionPath {
+		var content []byte
 
-	// verifyPath avoid the http transversal by checking the path is under DirRoot
-	_, err = verifyPath(fPath, s.TrustedRoot)
-	if err != nil {
-		log.Printf("fPath %q err: %s", fPath, err)
-		w.WriteHeader(http.StatusNotFound)
+		searchDefinition := &search.OpenSearchDefinition{
+			InputEncoding:  "UTF-8",
+			OutputEncoding: "UTF-8",
+			OpenSearchUrl:  search.OpenSearchUrl{Type: "application/atom+xml;profile=opds-catalog;kind=acquisition", Template: "/search?q={searchTerms}"},
+		}
+
+		content, err = xml.MarshalIndent(searchDefinition, "  ", "    ")
+		content = append([]byte(xml.Header), content...)
+
+		w.Header().Add("Content-Type", "application/xml")
+
+		http.ServeContent(w, req, searchDefinitionName, TimeNow(), bytes.NewReader(content))
 		return nil
 	}
 
-	log.Printf("urlPath:'%s'", urlPath)
+	var query = ""
+	var fPath string
+	if urlPath == searchPath {
+		query = req.URL.Query().Get("q")
 
-	if _, err := os.Stat(fPath); err != nil {
-		log.Printf("fPath err: %s", err)
-		w.WriteHeader(http.StatusNotFound)
-		return err
-	}
+		if query == "" {
+			return errors.New("query param 'q' empty or missing")
+		}
+		fPath = s.TrustedRoot
+	} else {
+		fPath = filepath.Join(s.TrustedRoot, urlPath)
 
-	log.Printf("fPath:'%s'", fPath)
+		// verifyPath avoid the http transversal by checking the path is under DirRoot
+		_, err = verifyPath(fPath, s.TrustedRoot)
+		if err != nil {
+			log.Printf("fPath %q err: %s", fPath, err)
+			w.WriteHeader(http.StatusNotFound)
+			return nil
+		}
 
-	// it's a file just serve the file
-	if getPathType(fPath) == pathTypeFile {
-		http.ServeFile(w, req, fPath)
-		return nil
+		log.Printf("urlPath:'%s'", urlPath)
+
+		if _, err := os.Stat(fPath); err != nil {
+			log.Printf("fPath err: %s", err)
+			w.WriteHeader(http.StatusNotFound)
+			return err
+		}
+
+		log.Printf("fPath:'%s'", fPath)
+
+		// it's a file just serve the file
+		if getPathType(fPath) == pathTypeFile {
+			http.ServeFile(w, req, fPath)
+			return nil
+		}
 	}
 
 	if s.NoCache {
@@ -105,18 +141,24 @@ func (s OPDS) Handler(w http.ResponseWriter, req *http.Request) error {
 		w.Header().Add("Expires", "0")
 	}
 
-	navFeed := s.makeFeed(fPath, req)
-
 	var content []byte
-	// it is an acquisition feed
-	if getPathType(fPath) == pathTypeDirOfFiles {
+
+	if urlPath == searchPath {
+		searchResult, size := s.makeSearchResult(req, query)
+		acFeed := &search.SearchResultFeed{Feed: &searchResult, Size: size, OS: "http://purl.org/dc/terms/", Opds: "http://opds-spec.org/2010/catalog", Dc: "http://purl.org/dc/terms/"}
+		content, err = xml.MarshalIndent(acFeed, "  ", "    ")
+		w.Header().Add("Content-Type", "application/atom+xml;profile=opds-catalog;kind=acquisition")
+	} else if getPathType(fPath) == pathTypeDirOfFiles {
+		navFeed := s.makeFeed(fPath, req)
 		acFeed := &opds.AcquisitionFeed{Feed: &navFeed, Dc: "http://purl.org/dc/terms/", Opds: "http://opds-spec.org/2010/catalog"}
 		content, err = xml.MarshalIndent(acFeed, "  ", "    ")
 		w.Header().Add("Content-Type", "application/atom+xml;profile=opds-catalog;kind=acquisition")
-	} else { // it is a navegation feed
+	} else { // it is a navigation feed
+		navFeed := s.makeFeed(fPath, req)
 		content, err = xml.MarshalIndent(navFeed, "  ", "    ")
 		w.Header().Add("Content-Type", "application/atom+xml;profile=opds-catalog;kind=navigation")
 	}
+
 	if err != nil {
 		log.Printf("error while serving '%s': %s", fPath, err)
 		return err
@@ -133,11 +175,11 @@ func (s OPDS) makeFeed(fpath string, req *http.Request) atom.Feed {
 		ID(req.URL.Path).
 		Title("Catalog in " + req.URL.Path).
 		Updated(TimeNow()).
-		AddLink(opds.LinkBuilder.Rel("start").Href("/").Type(navigationType).Build())
+		AddLink(opds.LinkBuilder.Rel("start").Href("/").Type(navigationType).Build()).
+		AddLink(opds.LinkBuilder.Rel("search").Href(searchDefinitionPath).Type(searchType).Build())
 
 	dirEntries, _ := os.ReadDir(fpath)
 	for _, entry := range dirEntries {
-
 		if fileShouldBeIgnored(entry.Name(), s.HideCalibreFiles, s.HideDotFiles) {
 			continue
 		}
@@ -156,6 +198,48 @@ func (s OPDS) makeFeed(fpath string, req *http.Request) atom.Feed {
 				Build())
 	}
 	return feedBuilder.Build()
+}
+
+func (s OPDS) makeSearchResult(req *http.Request, query string) (atom.Feed, int) {
+	feedBuilder := search.FeedBuilder.
+		ID(req.URL.Path).
+		Title(fmt.Sprintf("Folders containing files matching query %s", query)).
+		Updated(TimeNow()).
+		AddLink(opds.LinkBuilder.Rel("start").Href("/").Type(navigationType).Build()).
+		AddLink(opds.LinkBuilder.Rel("search").Href(searchDefinitionPath).Type(searchType).Build())
+
+	var count = 0
+	filepath.WalkDir(s.TrustedRoot, func(path string, file fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		_, pathRelativeToContentRoot, _ := strings.Cut(path, s.TrustedRoot+"/")
+
+		if !file.IsDir() {
+			if fileShouldBeIgnored(pathRelativeToContentRoot, s.HideCalibreFiles, s.HideDotFiles) {
+				// skip
+			} else {
+				if strings.Contains(strings.ToLower(file.Name()), strings.ToLower(query)) {
+					_ = strings.Replace(req.URL.Path, searchPath, "", 1)
+
+					feedBuilder = feedBuilder.
+						AddEntry(opds.EntryBuilder.
+							ID("/" + pathRelativeToContentRoot).
+							Title(file.Name()).
+							AddLink(opds.LinkBuilder.
+								Rel(getRel(file.Name(), 0)).
+								Href(url.PathEscape("/" + pathRelativeToContentRoot)).
+								Type(getType(file.Name(), 0)).
+								Build()).
+							Build())
+					count++
+				}
+			}
+		}
+		return nil
+	})
+	return feedBuilder.Build(), count
 }
 
 func fileShouldBeIgnored(filename string, hideCalibreFiles, hideDotFiles bool) bool {

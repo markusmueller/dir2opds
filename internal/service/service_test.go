@@ -30,6 +30,8 @@ func TestHandler(t *testing.T) {
 		"servingAFile":                        {input: "/mybook/mybook.txt", want: "Fixture", WantedContentType: "text/plain; charset=utf-8", wantedStatusCode: 200},
 		"serving file with spaces":            {input: "/mybook/mybook%20copy.txt", want: "Fixture", WantedContentType: "text/plain; charset=utf-8", wantedStatusCode: 200},
 		"http trasversal vulnerability check": {input: "/../../../../mybook", want: feed, WantedContentType: "application/atom+xml;profile=opds-catalog;kind=navigation", wantedStatusCode: 404},
+		"search definition":                   {input: "/opensearch.xml", want: searchDefinition, WantedContentType: "application/xml", wantedStatusCode: 200},
+		"search result":                       {input: "/search?q=mybook", want: searchResult, WantedContentType: "application/atom+xml;profile=opds-catalog;kind=acquisition", wantedStatusCode: 200},
 	}
 
 	for name, tc := range tests {
@@ -68,6 +70,7 @@ var feed = `<?xml version="1.0" encoding="UTF-8"?>
       <title>Catalog in /</title>
       <id>/</id>
       <link rel="start" href="/" type="application/atom+xml;profile=opds-catalog;kind=navigation"></link>
+      <link rel="search" href="/opensearch.xml" type="application/opensearchdescription+xml"></link>
       <updated>2020-05-25T00:00:00+00:00</updated>
       <entry>
           <title>emptyFolder</title>
@@ -90,6 +93,13 @@ var feed = `<?xml version="1.0" encoding="UTF-8"?>
           <published></published>
           <updated></updated>
       </entry>
+      <entry>
+          <title>nomatch</title>
+          <id>/nomatch</id>
+          <link rel="subsection" href="/nomatch" type="application/atom+xml;profile=opds-catalog;kind=acquisition" title="nomatch"></link>
+          <published></published>
+          <updated></updated>
+      </entry>
   </feed>`
 
 var acquisitionFeed = `<?xml version="1.0" encoding="UTF-8"?>
@@ -97,6 +107,7 @@ var acquisitionFeed = `<?xml version="1.0" encoding="UTF-8"?>
       <title>Catalog in /mybook</title>
       <id>/mybook</id>
       <link rel="start" href="/" type="application/atom+xml;profile=opds-catalog;kind=navigation"></link>
+      <link rel="search" href="/opensearch.xml" type="application/opensearchdescription+xml"></link>
       <updated>2020-05-25T00:00:00+00:00</updated>
       <entry>
           <title>mybook copy.epub</title>
@@ -133,4 +144,63 @@ var acquisitionFeed = `<?xml version="1.0" encoding="UTF-8"?>
           <published></published>
           <updated></updated>
       </entry>
+  </feed>`
+
+var searchDefinition = `<?xml version="1.0" encoding="UTF-8"?>
+  <OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/">
+      <InputEncoding>UTF-8</InputEncoding>
+      <OutputEncoding>UTF-8</OutputEncoding>
+      <Url type="application/atom+xml;profile=opds-catalog;kind=acquisition" template="/search?q={searchTerms}"></Url>
+  </OpenSearchDescription>`
+
+var searchResult = `<?xml version="1.0" encoding="UTF-8"?>
+  <feed xmlns="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/terms/" xmlns:opds="http://opds-spec.org/2010/catalog" xmlns:opensearch="http://purl.org/dc/terms/">
+      <title>Folders containing files matching query mybook</title>
+      <id>/search</id>
+      <link rel="start" href="/" type="application/atom+xml;profile=opds-catalog;kind=navigation"></link>
+      <link rel="search" href="/opensearch.xml" type="application/opensearchdescription+xml"></link>
+      <updated>2020-05-25T00:00:00+00:00</updated>
+      <entry>
+          <title>mybook copy.epub</title>
+          <id>/mybook/mybook copy.epub</id>
+          <link rel="http://opds-spec.org/acquisition" href="%2Fmybook%2Fmybook%20copy.epub" type="application/epub+zip"></link>
+          <published></published>
+          <updated></updated>
+      </entry>
+      <entry>
+          <title>mybook copy.txt</title>
+          <id>/mybook/mybook copy.txt</id>
+          <link rel="http://opds-spec.org/acquisition" href="%2Fmybook%2Fmybook%20copy.txt" type="text/plain; charset=utf-8"></link>
+          <published></published>
+          <updated></updated>
+      </entry>
+      <entry>
+          <title>mybook.epub</title>
+          <id>/mybook/mybook.epub</id>
+          <link rel="http://opds-spec.org/acquisition" href="%2Fmybook%2Fmybook.epub" type="application/epub+zip"></link>
+          <published></published>
+          <updated></updated>
+      </entry>
+      <entry>
+          <title>mybook.pdf</title>
+          <id>/mybook/mybook.pdf</id>
+          <link rel="http://opds-spec.org/acquisition" href="%2Fmybook%2Fmybook.pdf" type="application/pdf"></link>
+          <published></published>
+          <updated></updated>
+      </entry>
+      <entry>
+          <title>mybook.txt</title>
+          <id>/mybook/mybook.txt</id>
+          <link rel="http://opds-spec.org/acquisition" href="%2Fmybook%2Fmybook.txt" type="text/plain; charset=utf-8"></link>
+          <published></published>
+          <updated></updated>
+      </entry>
+      <entry>
+          <title>mybook.txt</title>
+          <id>/new folder/mybook.txt</id>
+          <link rel="http://opds-spec.org/acquisition" href="%2Fnew%20folder%2Fmybook.txt" type="text/plain; charset=utf-8"></link>
+          <published></published>
+          <updated></updated>
+      </entry>
+      <opensearch:totalResults>6</opensearch:totalResults>
   </feed>`
