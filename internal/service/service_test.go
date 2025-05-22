@@ -164,42 +164,42 @@ var searchResult = `<?xml version="1.0" encoding="UTF-8"?>
       <entry>
           <title>mybook copy.epub</title>
           <id>/mybook/mybook copy.epub</id>
-          <link rel="http://opds-spec.org/acquisition" href="%2Fmybook%2Fmybook%20copy.epub" type="application/epub+zip"></link>
+          <link rel="http://opds-spec.org/acquisition" href="/mybook%2Fmybook%20copy.epub" type="application/epub+zip"></link>
           <published></published>
           <updated></updated>
       </entry>
       <entry>
           <title>mybook copy.txt</title>
           <id>/mybook/mybook copy.txt</id>
-          <link rel="http://opds-spec.org/acquisition" href="%2Fmybook%2Fmybook%20copy.txt" type="text/plain; charset=utf-8"></link>
+          <link rel="http://opds-spec.org/acquisition" href="/mybook%2Fmybook%20copy.txt" type="text/plain; charset=utf-8"></link>
           <published></published>
           <updated></updated>
       </entry>
       <entry>
           <title>mybook.epub</title>
           <id>/mybook/mybook.epub</id>
-          <link rel="http://opds-spec.org/acquisition" href="%2Fmybook%2Fmybook.epub" type="application/epub+zip"></link>
+          <link rel="http://opds-spec.org/acquisition" href="/mybook%2Fmybook.epub" type="application/epub+zip"></link>
           <published></published>
           <updated></updated>
       </entry>
       <entry>
           <title>mybook.pdf</title>
           <id>/mybook/mybook.pdf</id>
-          <link rel="http://opds-spec.org/acquisition" href="%2Fmybook%2Fmybook.pdf" type="application/pdf"></link>
+          <link rel="http://opds-spec.org/acquisition" href="/mybook%2Fmybook.pdf" type="application/pdf"></link>
           <published></published>
           <updated></updated>
       </entry>
       <entry>
           <title>mybook.txt</title>
           <id>/mybook/mybook.txt</id>
-          <link rel="http://opds-spec.org/acquisition" href="%2Fmybook%2Fmybook.txt" type="text/plain; charset=utf-8"></link>
+          <link rel="http://opds-spec.org/acquisition" href="/mybook%2Fmybook.txt" type="text/plain; charset=utf-8"></link>
           <published></published>
           <updated></updated>
       </entry>
       <entry>
           <title>mybook.txt</title>
           <id>/new folder/mybook.txt</id>
-          <link rel="http://opds-spec.org/acquisition" href="%2Fnew%20folder%2Fmybook.txt" type="text/plain; charset=utf-8"></link>
+          <link rel="http://opds-spec.org/acquisition" href="/new%20folder%2Fmybook.txt" type="text/plain; charset=utf-8"></link>
           <published></published>
           <updated></updated>
       </entry>

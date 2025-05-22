@@ -234,7 +234,7 @@ func (s OPDS) makeSearchResult(req *http.Request, query string) (atom.Feed, int)
 							Title(file.Name()).
 							AddLink(opds.LinkBuilder.
 								Rel(getRel(file.Name(), 0)).
-								Href(url.PathEscape("/" + pathRelativeToContentRoot)).
+								Href("/" + url.PathEscape(pathRelativeToContentRoot)).
 								Type(getType(file.Name(), 0)).
 								Build()).
 							Build())
