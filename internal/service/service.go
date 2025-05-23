@@ -221,6 +221,10 @@ func (s OPDS) makeSearchResult(req *http.Request, query string) (atom.Feed, int)
 
 		_, pathRelativeToContentRoot, _ := strings.Cut(path, s.TrustedRoot+"/")
 
+		if file.IsDir() && fileShouldBeIgnored(pathRelativeToContentRoot, s.HideCalibreFiles, s.HideDotFiles) {
+			return filepath.SkipDir
+		}
+
 		if !file.IsDir() {
 			if fileShouldBeIgnored(pathRelativeToContentRoot, s.HideCalibreFiles, s.HideDotFiles) {
 				// skip
