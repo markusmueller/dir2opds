@@ -230,8 +230,6 @@ func (s OPDS) makeSearchResult(req *http.Request, query string) (atom.Feed, int)
 				// skip
 			} else {
 				if strings.Contains(strings.ToLower(file.Name()), strings.ToLower(query)) {
-					_ = strings.Replace(req.URL.Path, searchPath, "", 1)
-
 					feedBuilder = feedBuilder.
 						AddEntry(opds.EntryBuilder.
 							ID("/" + pathRelativeToContentRoot).
