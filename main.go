@@ -30,13 +30,14 @@ import (
 )
 
 var (
-	port         = flag.String("port", "8080", "The server will listen in this port.")
-	host         = flag.String("host", "0.0.0.0", "The server will listen in this host.")
-	dirRoot      = flag.String("dir", "./books", "A directory with books.")
-	debug        = flag.Bool("debug", false, "If it is set it will log the requests.")
-	calibre      = flag.Bool("calibre", false, "Hide files stored by calibre.")
-	hideDotFiles = flag.Bool("hide-dot-files", false, "Hide files that starts with dot.")
-	noCache      = flag.Bool("no-cache", false, "adds reponse headers to avoid client from caching.")
+	port             = flag.String("port", "8080", "The server will listen in this port.")
+	host             = flag.String("host", "0.0.0.0", "The server will listen in this host.")
+	dirRoot          = flag.String("dir", "./books", "A directory with books.")
+	debug            = flag.Bool("debug", false, "If it is set it will log the requests.")
+	calibre          = flag.Bool("calibre", false, "Hide files stored by calibre (except covers if enabled)")
+	useCalibreCovers = flag.Bool("use-calibre-covers", false, "Use covers stored by calibre.")
+	hideDotFiles     = flag.Bool("hide-dot-files", false, "Hide files that starts with dot.")
+	noCache          = flag.Bool("no-cache", false, "adds reponse headers to avoid client from caching.")
 )
 
 func main() {
@@ -59,7 +60,7 @@ func main() {
 
 	fmt.Println(startValues())
 
-	s := service.OPDS{TrustedRoot: absolutePath, HideCalibreFiles: *calibre, HideDotFiles: *hideDotFiles, NoCache: *noCache}
+	s := service.OPDS{TrustedRoot: absolutePath, HideCalibreFiles: *calibre, UseCalibreCovers: *useCalibreCovers, HideDotFiles: *hideDotFiles, NoCache: *noCache}
 
 	http.HandleFunc("/", errorHandler(s.Handler))
 

@@ -38,7 +38,7 @@ func TestHandler(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			// setup
-			s := service.OPDS{"testdata", true, true, true}
+			s := service.OPDS{"testdata", true, true, true, true}
 			w := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodGet, tc.input, nil)
 			service.TimeNow = func() time.Time {
@@ -98,6 +98,13 @@ var feed = `<?xml version="1.0" encoding="UTF-8"?>
           <title>nomatch</title>
           <id>/nomatch</id>
           <link rel="subsection" href="/nomatch" type="application/atom+xml;profile=opds-catalog;kind=acquisition" title="nomatch"></link>
+          <published></published>
+          <updated></updated>
+      </entry>
+      <entry>
+          <title>with cover</title>
+          <id>/with cover</id>
+          <link rel="subsection" href="/with%20cover" type="application/atom+xml;profile=opds-catalog;kind=acquisition" title="with cover"></link>
           <published></published>
           <updated></updated>
       </entry>
@@ -203,5 +210,13 @@ var searchResult = `<?xml version="1.0" encoding="UTF-8"?>
           <published></published>
           <updated></updated>
       </entry>
-      <opensearch:totalResults>6</opensearch:totalResults>
+      <entry>
+          <title>mybook.epub</title>
+          <id>/with cover/mybook.epub</id>
+          <link rel="http://opds-spec.org/acquisition" href="/with%20cover%2Fmybook.epub" type="application/epub+zip"></link>
+          <link rel="http://opds-spec.org/image" href="/with%20cover%2Fcover.jpg" type="image/jpeg"></link>
+          <published></published>
+          <updated></updated>
+      </entry>
+      <opensearch:totalResults>7</opensearch:totalResults>
   </feed>`

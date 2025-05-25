@@ -49,6 +49,7 @@ const (
 type OPDS struct {
 	TrustedRoot      string
 	HideCalibreFiles bool
+	UseCalibreCovers bool
 	HideDotFiles     bool
 	NoCache          bool
 }
@@ -132,6 +133,9 @@ func (s OPDS) Handler(w http.ResponseWriter, req *http.Request) error {
 		// it's a file just serve the file
 		if getPathType(fPath) == pathTypeFile {
 			_, pathRelativeToContentRoot, _ := strings.Cut(fPath, s.TrustedRoot+"/")
+			if s.UseCalibreCovers && strings.HasSuffix(pathRelativeToContentRoot, "cover.jpg") {
+				http.ServeFile(w, req, fPath)
+			}
 			if fileShouldBeIgnored(pathRelativeToContentRoot, s.HideCalibreFiles, s.HideDotFiles) {
 				w.WriteHeader(http.StatusNotFound)
 			} else {
@@ -190,17 +194,26 @@ func (s OPDS) makeFeed(fpath string, req *http.Request) atom.Feed {
 		}
 
 		pathType := getPathType(filepath.Join(fpath, entry.Name()))
-		feedBuilder = feedBuilder.
-			AddEntry(opds.EntryBuilder.
-				ID(req.URL.Path + entry.Name()).
+
+		var builder = opds.EntryBuilder{}
+
+		rel := getRel(entry.Name(), pathType)
+
+		builder = builder.ID(req.URL.Path + entry.Name()).
+			Title(entry.Name()).
+			AddLink(opds.LinkBuilder.
+				Rel(rel).
 				Title(entry.Name()).
-				AddLink(opds.LinkBuilder.
-					Rel(getRel(entry.Name(), pathType)).
-					Title(entry.Name()).
-					Href(filepath.Join(req.URL.RequestURI(), url.PathEscape(entry.Name()))).
-					Type(getType(entry.Name(), pathType)).
-					Build()).
+				Href(filepath.Join(req.URL.RequestURI(), url.PathEscape(entry.Name()))).
+				Type(getType(entry.Name(), pathType)).
 				Build())
+
+		if rel == "http://opds-spec.org/acquisition" {
+			builder = addCoverIfExists(filepath.Join(fpath, entry.Name()), builder, s)
+		}
+
+		feedBuilder = feedBuilder.
+			AddEntry(builder.Build())
 	}
 	return feedBuilder.Build()
 }
@@ -230,16 +243,20 @@ func (s OPDS) makeSearchResult(req *http.Request, query string) (atom.Feed, int)
 				// skip
 			} else {
 				if strings.Contains(strings.ToLower(file.Name()), strings.ToLower(query)) {
-					feedBuilder = feedBuilder.
-						AddEntry(opds.EntryBuilder.
-							ID("/" + pathRelativeToContentRoot).
-							Title(file.Name()).
-							AddLink(opds.LinkBuilder.
-								Rel(getRel(file.Name(), 0)).
-								Href("/" + url.PathEscape(pathRelativeToContentRoot)).
-								Type(getType(file.Name(), 0)).
-								Build()).
+					var builder = opds.EntryBuilder{}
+
+					builder = builder.
+						ID("/" + pathRelativeToContentRoot).
+						Title(file.Name()).
+						AddLink(opds.LinkBuilder.
+							Rel(getRel(file.Name(), 0)).
+							Href("/" + url.PathEscape(pathRelativeToContentRoot)).
+							Type(getType(file.Name(), 0)).
 							Build())
+
+					builder = addCoverIfExists(path, builder, s)
+
+					feedBuilder = feedBuilder.AddEntry(builder.Build())
 					count++
 				}
 			}
@@ -351,4 +368,23 @@ func verifyPath(path, trustedRoot string) (string, error) {
 
 func inTrustedRoot(path string, trustedRoot string) bool {
 	return strings.HasPrefix(path, trustedRoot)
+}
+
+func addCoverIfExists(akquisitionPath string, builder opds.EntryBuilder, s OPDS) opds.EntryBuilder {
+	if s.UseCalibreCovers {
+		coverPath := filepath.Dir(akquisitionPath) + "/cover.jpg"
+		stat, err := os.Stat(coverPath)
+
+		if err == nil {
+			_, coverPathRelativeToContentRoot, _ := strings.Cut(coverPath, s.TrustedRoot+"/")
+
+			builder = builder.AddLink(opds.LinkBuilder.
+				Rel("http://opds-spec.org/image").
+				Href("/" + url.PathEscape(coverPathRelativeToContentRoot)).
+				Type(getType(stat.Name(), pathTypeFile)).
+				Build())
+		}
+	}
+
+	return builder
 }

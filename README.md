@@ -29,7 +29,9 @@ go install github.com/dubyte/dir2opds@latest
 ```bash
 Usage of dir2opds:
   -calibre
-        Hide files stored by calibre.
+        Hide files stored by calibre (except calibre covers if enabled using option `-use-calibre-covers`)
+  -use-calibre-covers
+        Use covers stored by calibre 
   -debug
         If it is set it will log the requests.
   -dir string
