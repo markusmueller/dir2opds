@@ -162,6 +162,7 @@ func (s OPDS) Handler(w http.ResponseWriter, req *http.Request) error {
 		if fileShouldBeIgnored(pathRelativeToContentRoot, s.HideCalibreFiles, s.HideDotFiles) {
 			w.WriteHeader(http.StatusNotFound)
 		} else {
+			w.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filepath.Base(pathRelativeToContentRoot)))
 			http.ServeFile(w, req, fPath)
 		}
 		return nil
