@@ -89,7 +89,7 @@ var root = `<?xml version="1.0" encoding="UTF-8"?>
       <entry>
           <title>All books</title>
           <id>/shelf</id>
-          <link rel="http://opds-spec.org/shelf" href="/shelf" type="application/atom+xml;profile=opds-catalog;kind=acquisition"></link>
+          <link rel="http://opds-spec.org/subsection" href="/shelf" type="application/atom+xml;profile=opds-catalog;kind=acquisition"></link>
           <published></published>
           <updated></updated>
           <content type="text">All books.</content>

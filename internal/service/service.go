@@ -217,7 +217,7 @@ func (s OPDS) makeFeedRoot(req *http.Request) atom.Feed {
 
 	feedBuilder = feedBuilder.AddEntry(builder.Build())
 
-	builder = opds.EntryBuilder{}.Title("All books").ID("/shelf").AddLink(opds.LinkBuilder.Href("/shelf").Rel("http://opds-spec.org/shelf").Type(acquisitionType).Build()).Content(&allContent)
+	builder = opds.EntryBuilder{}.Title("All books").ID("/shelf").AddLink(opds.LinkBuilder.Href("/shelf").Rel("http://opds-spec.org/subsection").Type(acquisitionType).Build()).Content(&allContent)
 
 	feedBuilder = feedBuilder.AddEntry(builder.Build())
 
