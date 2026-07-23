@@ -311,7 +311,10 @@ func (s OPDS) makeFeedNewest(req *http.Request) atom.Feed {
 			return fileI.ModTime().After(fileJ.ModTime())
 		}
 
-		return fileI.Name() < fileJ.Name()
+		if fileI.Name() != fileJ.Name() {
+			return fileI.Name() < fileJ.Name()
+		}
+		return files[i].filePath < files[j].filePath
 	})
 
 	for i := 0; i < 14 && i < len(files); i++ {
@@ -440,6 +443,7 @@ func getPathType(dirpath string) int {
 	fi, err := os.Stat(dirpath)
 	if err != nil {
 		log.Printf("getPathType os.Stat err: %s", err)
+		return pathTypeFile
 	}
 
 	if isFile(fi) {
