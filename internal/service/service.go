@@ -289,14 +289,15 @@ func (s OPDS) makeFeedNewest(req *http.Request) atom.Feed {
 			return filepath.SkipDir
 		}
 
-		if !file.IsDir() {
-			if fileShouldBeIgnored(file.Name(), s.HideCalibreFiles, s.HideDotFiles) {
-				// skip
-			} else {
-				if getPathType(path) == pathTypeFile {
-					info, _ := file.Info()
-					files = append(files, File{filePath: path, fileInfo: info})
-				}
+		if !file.IsDir() && !fileShouldBeIgnored(file.Name(), s.HideCalibreFiles, s.HideDotFiles) {
+			info, err := os.Stat(path)
+			if err != nil {
+				log.Printf("makeFeedNewest os.Stat err: %s", err)
+				return nil
+			}
+
+			if !info.IsDir() {
+				files = append(files, File{filePath: path, fileInfo: info})
 			}
 		}
 		return nil
